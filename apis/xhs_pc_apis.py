@@ -350,6 +350,41 @@ class XHS_Apis():
             success = False
             msg = str(e)
         return success, msg, note_list
+    
+    def get_user_latest_collect_note_info(self, user_url: str, cookies_str: str, page = 1, proxies: dict = None):
+        """
+            获取用户最新收藏笔记
+            :param user_id: 你想要获取的用户的id
+            :param cookies_str: 你的cookies
+            :param page: 你想要获取的笔记的页数，一页为10条
+            返回用户的最新收藏笔记
+        """
+        cursor = ''
+        note_list = []
+        try:
+            urlParse = urllib.parse.urlparse(user_url)
+            user_id = urlParse.path.split("/")[-1]
+            kvs = urlParse.query.split('&')
+            kvDist = {kv.split('=')[0]: kv.split('=')[1] for kv in kvs}
+            xsec_token = kvDist['xsec_token'] if 'xsec_token' in kvDist else ""
+            xsec_source = kvDist['xsec_source'] if 'xsec_source' in kvDist else "pc_search"
+            for _ in range(page):
+                success, msg, res_json = self.get_user_collect_note_info(user_id, cursor, cookies_str, xsec_token,
+                                                                         xsec_source, proxies)
+                if not success:
+                    raise Exception(msg)
+                notes = res_json["data"]["notes"]
+                if 'cursor' in res_json["data"]:
+                    cursor = str(res_json["data"]["cursor"])
+                else:
+                    break
+                note_list.extend(notes)
+                if len(notes) == 0 or not res_json["data"]["has_more"]:
+                    break
+        except Exception as e:
+            success = False
+            msg = str(e)
+        return success, msg, note_list
 
     def get_note_info(self, url: str, cookies_str: str, proxies: dict = None):
         """
